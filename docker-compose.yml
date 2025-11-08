@@ -1,0 +1,70 @@
+services:
+  db:
+    image: postgres:18.0-alpine3.22
+    restart: always
+    environment:
+      POSTGRES_USER: photo_svc
+      POSTGRES_PASSWORD: 5cB84m6GgUOyeTZWXsdB08wd6drdadKi-1_GYOCJrX0
+      POSTGRES_DB: clever_photos_service
+    volumes:
+      - psql:/var/lib/postgresql/data
+      - .:/code
+    ports:
+      - 5432:5432
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d clever_photos_service"]
+      interval: 30s
+      timeout: 5s
+      retries: 10
+  
+  api_pre_exec:
+    image: ghcr.io/jkringen/cleverinterview-photo_service/backend:latest
+    command: >
+      sh -c "
+        set -e
+        poetry run python manage.py migrate &&
+        poetry run python manage.py ensure_superuser
+      "
+    env_file: 
+      - ./.env
+    depends_on:
+      db:
+        condition: service_healthy
+    restart: "no" 
+  
+  api:
+    image: ghcr.io/jkringen/cleverinterview-photo_service/backend:latest
+    build: .
+    command: >
+      poetry run uvicorn backend.asgi:application
+      --host 0.0.0.0
+      --port 80
+      --workers ${UVICORN_WORKERS:-4}
+      --proxy-headers
+      --forwarded-allow-ips="*"
+      --timeout-keep-alive 15
+      --limit-concurrency ${UVICORN_LIMIT_CONCURRENCY:-100}
+    env_file: 
+      - ./.env
+    environment:
+      DJANGO_SETTINGS_MODULE: backend.settings
+      DJANGO_DEBUG: "0"
+    # volumes:
+    #  - .:/code
+    ports:
+      - 8000:80
+    healthcheck:
+      test: curl --fail http://0.0.0.0/api/v1/health || exit 1
+      interval: 1m
+      retries: 5
+      start_period: 10s
+      timeout: 10s
+    depends_on:
+      db:
+        condition: service_healthy
+      api_pre_exec:
+        condition: service_completed_successfully
+    restart: unless-stopped  
+
+volumes:
+  psql:
