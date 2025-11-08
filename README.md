@@ -35,6 +35,25 @@ To fully launch the project, you can use this command: `docker compose up`
 Once all services are up and running, you can check the status with: `docker compose ps`. All containers / services should be up and running within a minute or so and none of them should be marked as `unhealthy`.
 
 ## Architecture
+### Environment Variables / Secret
+Environment variables are provided to the application via Docker Compose `.env` file support, at the moment. Once in a production environment, this could be completely different. But for this current setup, you will need to ensure that you have a `.env` file created in your local repository (we do NOT commit the `.env` file to the repo).
+
+The contents of the `.env` file should be as follows:
+```
+DJANGO_SUPERUSER_PASSWORD="<password>"
+DATABASE_NAME="<db_name>"
+DATABASE_USER="<db_user>"
+DATABASE_PASSWORD="<password>"
+DATABASE_HOST="<db_host>"
+API_JWT_PUBLIC_KEY="<public_key>"
+DJANGO_SECRET_KEY="<secret_key>"
+UVICORN_WORKERS=4
+UVICORN_LIMIT_CONCURRENCY=100
+LOG_LEVEL="INFO"
+```
+
+The values in of these variables depends on how you are configuring the system, etc. You'll need to ensure the values you provide work for your environment. For the `API_JWT_PUBLIC_KEY`, this must be the public key side of a private/public keypair created and utilized by the frontend & backend. The frontend will sign the JWT with the private key, and the backend should be able to validate it using the public key.
+
 ### REST APIs
 Django REST Framework, behind uvicorn. The `api` container defined in the `docker-compose.yml` file is the service that serve up our RESTful APIs. This is launched / hosted with `uvicorn` with a basic vertical scaling setup of 4 initial workers. The APIs are available via `http://<host>:8000/api/v1/<route>`.
 
