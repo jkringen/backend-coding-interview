@@ -1,9 +1,6 @@
 # PHOTO SERVICE - BACKEND
 This project is the backend for the Photo Service application and provides a Django API server serving REDSTful APIs for querying photos, photographers, protected with JWT based authentication, etc. The service is containerized using Docker and also contains a postgres database image that is used by the application.
 
-* post_save on User to auto-create Photographer tied to User account
-* docs about seeding DB and taking note of usernames and passwords
-
 ## Later TODOs
 - Proper deployment pipeline, ensuring secrets are passed securely
 - Pagination and next/prev links in returned data format, if enough records to break them up
