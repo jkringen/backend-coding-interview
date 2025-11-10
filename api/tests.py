@@ -1,9 +1,7 @@
+import random
 from dataclasses import dataclass
 from typing import Any, Callable, Optional, Tuple
 from unittest.mock import patch
-import random
-
-import json
 
 from django.contrib.auth import get_user_model
 from django.contrib.auth.models import AbstractUser
