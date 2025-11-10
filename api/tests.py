@@ -36,7 +36,7 @@ PHOTOS_API: str = reverse("api_photos")
 class PhotoUpdateContext:
     """Context container for passing data to shared photo update utility methods."""
 
-    errors: Optional[list[dict[str, str]]] = None
+    errors: Optional[list[dict[str, Any]]] = None
     response: Optional[Any] = None
     http_code: Optional[int] = None
     mock_validate_photograph: Optional[Any] = None
@@ -107,7 +107,7 @@ class APITestCaseWithJWT(APITestCase):
     @patch("api.views.get_photographs")
     def test_get_all_photos_success(self, mock_get_photographs):
         # configures get_photographs to return a success with a randomized payload to verify
-        expected_response: dict[str, str] = self.fake.pydict(allowed_types=(str,))
+        expected_response: dict[str, Any] = self._get_random_dict_data()
         mock_get_photographs.return_value = DbResult(success=True, result=expected_response)
 
         # SUT
@@ -121,11 +121,11 @@ class APITestCaseWithJWT(APITestCase):
     def test_post_photo_validation_failure(self, mock_validate_photograph):
         # configures validate_photograph to return a failure
         # random list of "errors" / random dictionaries
-        expected_errors: list[dict[str, str]] = self._random_validation_errors()
+        expected_errors: list[dict[str, Any]] = self._random_validation_errors()
         mock_validate_photograph.return_value = ValidatedData(success=False, errors=expected_errors, data=None)
 
         # SUT
-        response: HttpResponse = self.client.post(PHOTOS_API, self.fake.pydict(allowed_types=(str,)), format="json")
+        response: HttpResponse = self.client.post(PHOTOS_API, self._get_random_dict_data(), format="json")
 
         # ensure response returned expected http code and "errors"
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
@@ -137,14 +137,14 @@ class APITestCaseWithJWT(APITestCase):
         # configures validate_photograph to return a success and serialize_and_save_photograph a failure
         # random list of "errors" / random dictionaries
         mock_validate_photograph.return_value = ValidatedData(success=True, data=None, errors=None)
-        expected_errors: list[dict[str, str]] = self._random_validation_errors()
+        expected_errors: list[dict[str, Any]] = self._random_validation_errors()
         expected_http_code: int = random.choice(HTTP_FAILURE_CODES)
         mock_serialize_and_save_photograph.return_value = DbResult(
             success=False, errors=expected_errors, http_code=expected_http_code
         )
 
         # SUT
-        response: HttpResponse = self.client.post(PHOTOS_API, self.fake.pydict(allowed_types=(str,)), format="json")
+        response: HttpResponse = self.client.post(PHOTOS_API, self._get_random_dict_data(), format="json")
 
         # ensure response returned expected http code and "errors"
         self.assertEqual(response.status_code, expected_http_code)
@@ -155,11 +155,11 @@ class APITestCaseWithJWT(APITestCase):
     def test_post_photo_success(self, mock_serialize_and_save_photograph, mock_validate_photograph):
         # configures validate_photograph and serialize_and_save_photograph to return success
         # includes an expected response to verify
-        expected_response: dict[str, str] = self.fake.pydict(allowed_types=(str,))
+        expected_response: dict[str, Any] = self._get_random_dict_data()
         validated_data: ValidatedData = ValidatedData(success=True, data=None, errors=None)
         mock_validate_photograph.return_value = validated_data
         mock_serialize_and_save_photograph.return_value = DbResult(success=True, result=expected_response)
-        post_data: dict[str, str] = self.fake.pydict(allowed_types=(str,))
+        post_data: dict[str, Any] = self._get_random_dict_data()
 
         # SUT
         response: HttpResponse = self.client.post(PHOTOS_API, post_data, format="json")
@@ -193,7 +193,7 @@ class APITestCaseWithJWT(APITestCase):
     @patch("api.views.get_photograph")
     def test_get_photo_success(self, mock_get_photograph):
         # configures get_photograph to return a success including a randomize expected response
-        expected_response: dict[str, str] = self.fake.pydict(allowed_types=(str,))
+        expected_response: dict[str, Any] = self._get_random_dict_data()
         mock_get_photograph.return_value = DbResult(success=True, result=expected_response)
         url, photo_id = self._get_photo_url()
 
@@ -209,7 +209,7 @@ class APITestCaseWithJWT(APITestCase):
     @patch("api.views.validate_photograph")
     def test_update_photo_validation_failure(self, mock_validate_photograph, mock_update_photograph):
         # configures validate_photograph to return a failure with a random set of errors
-        expected_errors: list[dict[str, str]] = self._random_validation_errors()
+        expected_errors: list[dict[str, Any]] = self._random_validation_errors()
         mock_validate_photograph.return_value = ValidatedData(success=False, errors=expected_errors, data=None)
 
         # SUT (multiple update tests in a row)
@@ -243,9 +243,9 @@ class APITestCaseWithJWT(APITestCase):
             # generates random post_data and response data for validating
             context.validated_data = ValidatedData(success=True, data=None, errors=None)
             context.mock_validate_photograph.return_value = context.validated_data
-            context.response = self.fake.pydict(allowed_types=(str,))
+            context.response = self._get_random_dict_data()
             context.mock_update_photograph.return_value = DbResult(success=True, result=context.response)
-            context.post_data = self.fake.pydict(allowed_types=(str,))
+            context.post_data = self._get_random_dict_data()
 
         # SUT (multiple update tests in a row)
         self._perform_photo_update_tests(
@@ -303,11 +303,15 @@ class APITestCaseWithJWT(APITestCase):
         """Generate random list of error messages for a `DbResult` instance."""
         return self.fake.sentences(nb=self.fake.random_int(min=1, max=5))
 
-    def _random_validation_errors(self) -> list[dict[str, str]]:
+    def _random_validation_errors(self) -> list[dict[str, Any]]:
         """Generate random list of error messages for a `ValidatedData` instance."""
-        return [self.fake.pydict(allowed_types=(str,)) for _ in range(self.fake.random_int(min=1, max=5))]
+        return [self._get_random_dict_data() for _ in range(self.fake.random_int(min=1, max=5))]
 
     def _get_photo_url(self) -> Tuple[str, int]:
         """Generates photo URL with random photo_id populated. Returns tuple (url, id)."""
         random_id: int = self.fake.random_int()
         return (reverse("api_photo", kwargs={"photo_id": random_id}), random_id)
+
+    def _get_random_dict_data(self) -> dict[str, Any]:
+        """Returns a randomly generated dictionary to be used for POST data in tests."""
+        return self.fake.pydict(allowed_types=(str, int, bool))
