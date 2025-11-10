@@ -28,16 +28,14 @@ HTTP_FAILURE_CODES: Tuple[int] = (
 """List of HTTP `failure` codes to use in randomized values."""
 
 
-class ApiEndpoints:
-    PHOTOS_API: str = reverse("api_photos")
-    """URL for photos API endpoint."""
-
-    # PHOTO_API: str = reverse("api_photo")
-    """URL for photo API endpoint."""
+PHOTOS_API: str = reverse("api_photos")
+"""URL for photos API endpoint."""
 
 
 @dataclass
 class PhotoUpdateContext:
+    """Context container for passing data to shared photo update utility methods."""
+
     errors: Optional[list[dict[str, str]]] = None
     response: Optional[Any] = None
     http_code: Optional[int] = None
@@ -100,7 +98,7 @@ class APITestCaseWithJWT(APITestCase):
         mock_get_photographs.return_value = get_photographs_response
 
         # SUT
-        response: HttpResponse = self.client.get(ApiEndpoints.PHOTOS_API)
+        response: HttpResponse = self.client.get(PHOTOS_API)
 
         # ensure response returned expected http code and "errors"
         self.assertEqual(response.status_code, expected_http_code)
@@ -113,7 +111,7 @@ class APITestCaseWithJWT(APITestCase):
         mock_get_photographs.return_value = DbResult(success=True, result=expected_response)
 
         # SUT
-        response: HttpResponse = self.client.get(ApiEndpoints.PHOTOS_API)
+        response: HttpResponse = self.client.get(PHOTOS_API)
 
         # validate status code and
         self.assertEqual(response.status_code, status.HTTP_200_OK)
@@ -127,9 +125,7 @@ class APITestCaseWithJWT(APITestCase):
         mock_validate_photograph.return_value = ValidatedData(success=False, errors=expected_errors, data=None)
 
         # SUT
-        response: HttpResponse = self.client.post(
-            ApiEndpoints.PHOTOS_API, self.fake.pydict(allowed_types=(str,)), format="json"
-        )
+        response: HttpResponse = self.client.post(PHOTOS_API, self.fake.pydict(allowed_types=(str,)), format="json")
 
         # ensure response returned expected http code and "errors"
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
@@ -148,9 +144,7 @@ class APITestCaseWithJWT(APITestCase):
         )
 
         # SUT
-        response: HttpResponse = self.client.post(
-            ApiEndpoints.PHOTOS_API, self.fake.pydict(allowed_types=(str,)), format="json"
-        )
+        response: HttpResponse = self.client.post(PHOTOS_API, self.fake.pydict(allowed_types=(str,)), format="json")
 
         # ensure response returned expected http code and "errors"
         self.assertEqual(response.status_code, expected_http_code)
@@ -168,7 +162,7 @@ class APITestCaseWithJWT(APITestCase):
         post_data: dict[str, str] = self.fake.pydict(allowed_types=(str,))
 
         # SUT
-        response: HttpResponse = self.client.post(ApiEndpoints.PHOTOS_API, post_data, format="json")
+        response: HttpResponse = self.client.post(PHOTOS_API, post_data, format="json")
 
         # ensure response returned expected 201 http code and body payload
         self.assertEqual(response.status_code, status.HTTP_201_CREATED)
@@ -280,20 +274,22 @@ class APITestCaseWithJWT(APITestCase):
 
         # SUT (run test and assertions for multiple methods (logic is shared for updates))
         for method in ("put", "patch"):
+            # run pre_test_setup function, if defined
             if context.pre_test_setup:
                 context.pre_test_setup(context)
+            # execute test and pass response to assertion handler
             response: HttpResponse = execute_test(method)
             assertion_handler(response, context)
 
     def _assert_photo_update_failure(self, response: HttpResponse, context: PhotoUpdateContext):
         """Helper method to assert photo update FAILURE tests."""
-        # validate status code is a 400 bad request and expected errors are returned
+        # validate status code & errors match expected values
         self.assertEqual(response.status_code, context.http_code)
         self.assertListEqual(response.json(), context.errors)
 
     def _assert_photo_update_success(self, response: HttpResponse, context: PhotoUpdateContext):
         """Helper method to assert photo update SUCCESS tests."""
-        # validate status code is a 400 bad request and expected errors are returned
+        # validate status code is 201 (created) and expected response is returned
         self.assertEqual(response.status_code, status.HTTP_201_CREATED)
         self.assertDictEqual(response.json(), context.response)
         context.mock_validate_photograph.assert_called_with(context.post_data, is_update=True)
