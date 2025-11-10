@@ -41,8 +41,6 @@ class PhotoUpdateContext:
     response: Optional[Any] = None
     http_code: Optional[int] = None
     mocks: Optional[Patches] = None
-    mock_validate_photograph: Optional[MagicMock] = None
-    mock_update_photograph: Optional[MagicMock] = None
     post_data: Optional[Any] = None
     photo_id: Optional[Any] = None
     validated_data: Optional[Any] = None
