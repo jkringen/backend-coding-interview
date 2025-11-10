@@ -6,6 +6,7 @@ This project is the backend for the Photo Service application and provides a Dja
 - Pagination and next/prev links in returned data format, if enough records to break them up
 - Filtering query data via query params
 - Performance Monitoring / Tracking / Event Forwarding (Datadog, Splunk, etc.)
+- Better dev environment support
 
 ## Quickstart
 
@@ -30,6 +31,9 @@ Before starting up the project, it's a good idea to pull all required Docker ima
 To fully launch the project, you can use this command: `docker compose up`
 
 Once all services are up and running, you can check the status with: `docker compose ps`. All containers / services should be up and running within a minute or so and none of them should be marked as `unhealthy`.
+
+### Launching in Development
+**TODO:** Need to setup a better dev environment with and without Docker. Possibly using seaprate Django settings files and an env var to point Django at the proper one, etc.
 
 ## Architecture
 ### Environment Variables / Secret
