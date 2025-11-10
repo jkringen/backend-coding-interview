@@ -13,16 +13,22 @@ https://docs.djangoproject.com/en/5.2/ref/settings/
 import os
 from pathlib import Path
 from datetime import timedelta
+import sys
+from dotenv import load_dotenv
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
+
+# ensure we have a local .env loaded
+load_dotenv(BASE_DIR / ".env")
 
 
 # Quick-start development settings - unsuitable for production
 # See https://docs.djangoproject.com/en/5.2/howto/deployment/checklist/
 
-SECRET_KEY = os.environ.get("DJANGO_SECRET_KEY")
 DEBUG = os.environ.get("DJANGO_DEBUG", False)
+TEST_SECRET_KEY = "test-insecure-secret-key"
+SECRET_KEY = TEST_SECRET_KEY if DEBUG else os.environ.get("DJANGO_SECRET_KEY")
 
 # Application definition
 
@@ -77,18 +83,19 @@ TEMPLATES = [
 WSGI_APPLICATION = "backend.wsgi.application"
 
 
-# Database
-# https://docs.djangoproject.com/en/5.2/ref/settings/#databases
-
-DATABASES = {
-    "default": {
-        "ENGINE": "django.db.backends.postgresql",
-        "NAME": os.environ.get("DATABASE_NAME"),
-        "USER": os.environ.get("DATABASE_USER"),
-        "PASSWORD": os.environ.get("DATABASE_PASSWORD"),
-        "HOST": os.environ.get("DATABASE_HOST"),
-    }
+# Databases, postgres for prod and sqlite for test
+TEST_DB = {
+    "ENGINE": "django.db.backends.sqlite3",
+    "NAME": os.getenv("TEST_SQLITE_PATH", ":memory:"),  # or a temp file
 }
+PROD_DB = {
+    "ENGINE": "django.db.backends.postgresql",
+    "NAME": os.environ.get("DATABASE_NAME"),
+    "USER": os.environ.get("DATABASE_USER"),
+    "PASSWORD": os.environ.get("DATABASE_PASSWORD"),
+    "HOST": os.environ.get("DATABASE_HOST"),
+}
+DATABASES = {"default": TEST_DB if "test" in sys.argv else PROD_DB}
 
 # Password validation
 # https://docs.djangoproject.com/en/5.2/ref/settings/#auth-password-validators
